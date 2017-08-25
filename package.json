@@ -1,0 +1,25 @@
+{
+  "name": "aws-signer",
+  "version": "1.0.2",
+  "description": "Very minimal es6 library to sign AWS requests",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "keywords": [
+    "aws",
+    "sign",
+    "aws4",
+    "hmac",
+    "sha256"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:panosalbanis/aws-signer.git"
+  },
+  "author": "Panos Albanis",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "crypto-js": "^3.1.9-1"
+  }
+}
