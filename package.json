@@ -1,6 +1,6 @@
 {
   "name": "aws-signer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Very minimal es6 library to sign AWS requests",
   "main": "index.js",
   "scripts": {

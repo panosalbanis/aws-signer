@@ -50,14 +50,16 @@ function getAwsSignature(timeStamp, host, region, service, accessKeyId, secretAc
 
 function getFormatedDate(now, format) {
   var month = now.getUTCMonth() + 1;
+  var day = now.getUTCDate();
   month = month > 9 ? month.toString() : '0' + month.toString();
+  day = day > 9 ? day.toString() : '0' + day.toString();
   if (format === 'short') {
-    return now.getUTCFullYear().toString() + month + now.getUTCDate().toString();
+    return now.getUTCFullYear().toString() + month + day;
   } else {
     const hours = now.getUTCHours() > 9 ? now.getUTCHours() : '0' + now.getUTCHours();
     const minutes = now.getUTCMinutes() > 9 ? now.getUTCMinutes() : '0' + now.getUTCMinutes();
     const seconds = now.getUTCSeconds() > 9 ? now.getUTCSeconds() : '0' + now.getUTCSeconds();
-    return now.getUTCFullYear().toString() + month + now.getUTCDate().toString() + 'T' + hours + minutes + seconds + 'Z';
+    return now.getUTCFullYear().toString() + month + day + 'T' + hours + minutes + seconds + 'Z';
   }
 }
 
