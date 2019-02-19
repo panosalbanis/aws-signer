@@ -5,11 +5,10 @@ function getCanonicalRequest(now, host, payload) {
   const canonicalRequest = 'POST' + '\n' +
     '/' + '\n' +
     '\n' +
-    'content-type:application/x-amz-json-1.1' + '\n' +
     'host:' + host + '\n' +
     'x-amz-date:' + getFormattedDate(now, 'long') + '\n' +
     '\n' +
-    'content-type;host;x-amz-date' + '\n' +
+    'host;x-amz-date' + '\n' +
     Sha256(JSON.stringify(payload)).toString();
   return canonicalRequest;
 }
@@ -66,13 +65,14 @@ function getFormattedDate(now, format) {
 function getAuthHeader(timeStamp, host, region, service, accessKeyId, secretAccessKey, payload) {
   const authHeader = 'AWS4-HMAC-SHA256 ' +
     'Credential=' + accessKeyId + '/' + getFormattedDate(timeStamp, 'short') + '/' + region + '/' + service + '/aws4_request, ' +
-    'SignedHeaders=content-type;host;x-amz-date, ' +
+    'SignedHeaders=host;x-amz-date, ' +
     'Signature=' + getAwsSignature(timeStamp, host, region, service, accessKeyId, secretAccessKey, payload);
   return authHeader;
 }
 
 export const sign = function(opts, config) {
   const now = new Date();
+  opts.headers = opts.headers || {}
   opts.headers.Authorization = getAuthHeader(now, (new URL(opts.url)).hostname, config.region, config.service, config.accessKeyId, config.secretAccessKey, opts.data);
   opts.headers['Content-type'] = 'application/x-amz-json-1.1';
   opts.headers['X-Amz-Date'] = getFormattedDate(now, 'long');

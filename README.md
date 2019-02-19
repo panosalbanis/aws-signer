@@ -18,7 +18,7 @@ const config = {
 };
 
 const opts = {
-  url: 'htts://s3.eu-west-1.amazonaws.com/',
+  url: 'https://s3.eu-west-1.amazonaws.com/',
   method: 'post',
   headers: {
      Accept: '*/*'
