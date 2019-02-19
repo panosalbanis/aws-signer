@@ -7,7 +7,7 @@ function getCanonicalRequest(now, host, payload) {
     '\n' +
     'content-type:application/x-amz-json-1.1' + '\n' +
     'host:' + host + '\n' +
-    'x-amz-date:' + getFormatedDate(now, 'long') + '\n' +
+    'x-amz-date:' + getFormattedDate(now, 'long') + '\n' +
     '\n' +
     'content-type;host;x-amz-date' + '\n' +
     Sha256(JSON.stringify(payload)).toString();
@@ -20,14 +20,14 @@ function getHashedCanonicalRequest(request) {
 
 function getStringToSign(now, region, service, hashedRequest) {
   const stringToSign = 'AWS4-HMAC-SHA256' + '\n' +
-    getFormatedDate(now, 'long') + '\n' +
-    getFormatedDate(now, 'short')+ '/' + region + '/' + service + '/aws4_request' + '\n' +
+    getFormattedDate(now, 'long') + '\n' +
+    getFormattedDate(now, 'short')+ '/' + region + '/' + service + '/aws4_request' + '\n' +
     hashedRequest;
   return stringToSign;
 }
 
 function getSigningKey(now, region, service, accessKeyId, secretAccessKey) {
-  const dateStamp = getFormatedDate(now, 'short');
+  const dateStamp = getFormattedDate(now, 'short');
   const kDate = HmacSHA256(dateStamp, "AWS4" + secretAccessKey);
   const kRegion = HmacSHA256(region, kDate);
   const kService = HmacSHA256(service, kRegion);
@@ -48,7 +48,7 @@ function getAwsSignature(timeStamp, host, region, service, accessKeyId, secretAc
   return HmacSHA256(stringToSign, signingKey).toString();
 }
 
-function getFormatedDate(now, format) {
+function getFormattedDate(now, format) {
   var month = now.getUTCMonth() + 1;
   var day = now.getUTCDate();
   month = month > 9 ? month.toString() : '0' + month.toString();
@@ -65,7 +65,7 @@ function getFormatedDate(now, format) {
 
 function getAuthHeader(timeStamp, host, region, service, accessKeyId, secretAccessKey, payload) {
   const authHeader = 'AWS4-HMAC-SHA256 ' +
-    'Credential=' + accessKeyId + '/' + getFormatedDate(timeStamp, 'short') + '/' + region + '/' + service + '/aws4_request, ' +
+    'Credential=' + accessKeyId + '/' + getFormattedDate(timeStamp, 'short') + '/' + region + '/' + service + '/aws4_request, ' +
     'SignedHeaders=content-type;host;x-amz-date, ' +
     'Signature=' + getAwsSignature(timeStamp, host, region, service, accessKeyId, secretAccessKey, payload);
   return authHeader;
@@ -75,5 +75,5 @@ export const sign = function(opts, config) {
   const now = new Date();
   opts.headers.Authorization = getAuthHeader(now, (new URL(opts.url)).hostname, config.region, config.service, config.accessKeyId, config.secretAccessKey, opts.data);
   opts.headers['Content-type'] = 'application/x-amz-json-1.1';
-  opts.headers['X-Amz-Date'] = getFormatedDate(now, 'long');
+  opts.headers['X-Amz-Date'] = getFormattedDate(now, 'long');
 }
