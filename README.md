@@ -1,5 +1,5 @@
 # aws-signer
-A very minimal es6 library to sign AWS requests
+A very minimal es6 library to sign AWS axios requests
 
 ## Installation
 ```
