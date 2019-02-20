@@ -1,6 +1,9 @@
 # aws-signer
 A very minimal es6 library to sign AWS axios requests
 
+## Build Status
+[![Build Status](https://travis-ci.com/panosalbanis/aws-signer.svg?branch=master)](https://travis-ci.com/panosalbanis/aws-signer)
+
 ## Installation
 ```
 npm install --save aws-signer
