@@ -1,5 +1,5 @@
 # aws-signer
-A very minimal es6 library to sign AWS requests
+A very minimal es6 library to sign AWS axios requests
 
 ## Installation
 ```
@@ -18,7 +18,7 @@ const config = {
 };
 
 const opts = {
-  url: 'htts://s3.eu-west-1.amazonaws.com/',
+  url: 'https://s3.eu-west-1.amazonaws.com/',
   method: 'post',
   headers: {
      Accept: '*/*'

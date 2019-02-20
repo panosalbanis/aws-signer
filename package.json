@@ -4,7 +4,7 @@
   "description": "Very minimal es6 library to sign AWS requests",
   "main": "index.js",
   "scripts": {
-    "test": "exit 0"
+    "test": "jest"
   },
   "keywords": [
     "aws",
@@ -21,5 +21,11 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "crypto-js": "^3.1.9-1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.3.3",
+    "@babel/preset-env": "^7.3.1",
+    "babel-jest": "^24.1.0",
+    "jest": "^24.1.0"
   }
 }
