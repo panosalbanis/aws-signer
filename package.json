@@ -4,7 +4,8 @@
   "description": "Very minimal es6 library to sign AWS requests",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint index.js"
   },
   "keywords": [
     "aws",
@@ -25,7 +26,9 @@
   "devDependencies": {
     "@babel/core": "^7.3.3",
     "@babel/preset-env": "^7.3.1",
+    "babel-eslint": "^10.0.1",
     "babel-jest": "^24.1.0",
+    "eslint": "^5.14.1",
     "jest": "^24.1.0"
   }
 }
