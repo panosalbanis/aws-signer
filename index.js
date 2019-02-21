@@ -1,33 +1,38 @@
 import HmacSHA256 from 'crypto-js/hmac-sha256'
 import Sha256 from 'crypto-js/sha256'
 
-function getCanonicalRequest(now, host, path, query, headers, method, payload) {
-  const canonicalRequest =
-    method.toUpperCase() +
-    '\n' +
-    path +
-    '\n' +
-    query +
-    '\n' +
-    Object.keys(headers)
-      .map(header => `${header}:${headers[header]}`)
-      .join('\n')
-      .toLowerCase() +
-    (Object.keys(headers).length ? '\n' : '') +
-    'host:' +
-    host +
-    '\n' +
-    'x-amz-date:' +
-    getFormattedDate(now, 'long') +
-    '\n' +
-    '\n' +
+function getRequestHeaders(args) {
+  const { headers, host, timeStamp } = args
+  return Object.keys(headers)
+    .map(header => `${header.toLowerCase()}:${headers[header]}`)
+    .concat([
+      `host:${host}`,
+      `x-amz-date:${getFormattedDate(timeStamp, 'long')}`
+    ])
+    .join('\n')
+}
+
+function getSignedHeaders(headers) {
+  return (
     Object.keys(headers)
       .join(';')
       .toLowerCase() +
     (Object.keys(headers).length ? ';' : '') +
-    'host;x-amz-date' +
-    '\n' +
-    Sha256(JSON.stringify(payload)).toString()
+    'host;x-amz-date'
+  )
+}
+
+function getCanonicalRequest(args) {
+  const { path, query, headers, method, payload } = args
+  const canonicalRequest = [
+    `${method.toUpperCase()}`,
+    `${path}`,
+    `${query}`,
+    `${getRequestHeaders(args)}`,
+    ``,
+    `${getSignedHeaders(headers)}`,
+    `${Sha256(JSON.stringify(payload)).toString()}`
+  ].join('\n')
   return canonicalRequest
 }
 
@@ -35,20 +40,14 @@ function getHashedCanonicalRequest(request) {
   return Sha256(request).toString()
 }
 
-function getStringToSign(now, region, service, hashedRequest) {
-  const stringToSign =
-    'AWS4-HMAC-SHA256' +
-    '\n' +
-    getFormattedDate(now, 'long') +
-    '\n' +
-    getFormattedDate(now, 'short') +
-    '/' +
-    region +
-    '/' +
-    service +
-    '/aws4_request' +
-    '\n' +
-    hashedRequest
+function getStringToSign(args, hashedRequest) {
+  const { timeStamp, region, service } = args
+  const stringToSign = [
+    `AWS4-HMAC-SHA256`,
+    `${getFormattedDate(timeStamp, 'long')}`,
+    `${getFormattedDate(timeStamp, 'short')}/${region}/${service}/aws4_request`,
+    `${hashedRequest}`
+  ].join('\n')
   return stringToSign
 }
 
@@ -65,133 +64,74 @@ function getSignature(stringToSign, signingKey) {
   return HmacSHA256(stringToSign, signingKey).toString()
 }
 
-function getAwsSignature(
-  timeStamp,
-  host,
-  path,
-  query,
-  headers,
-  method,
-  region,
-  service,
-  accessKeyId,
-  secretAccessKey,
-  payload
-) {
-  const canonicalRequest = getCanonicalRequest(
-    timeStamp,
-    host,
-    path,
-    query,
-    headers,
-    method,
-    payload
-  )
+function getAwsSignature(args) {
+  const { timeStamp, region, service, secretAccessKey } = args
+  const canonicalRequest = getCanonicalRequest(args)
   const hashedRequest = getHashedCanonicalRequest(canonicalRequest)
-  const stringToSign = getStringToSign(
-    timeStamp,
-    region,
-    service,
-    hashedRequest
-  )
+  const stringToSign = getStringToSign(args, hashedRequest)
   const signingKey = getSigningKey(timeStamp, region, service, secretAccessKey)
   const signature = getSignature(stringToSign, signingKey)
   return signature
 }
 
-function getFormattedDate(now, format) {
-  var month = now.getUTCMonth() + 1
-  var day = now.getUTCDate()
-  month = month > 9 ? month.toString() : '0' + month.toString()
-  day = day > 9 ? day.toString() : '0' + day.toString()
+function getFormattedDate(timeStamp, format) {
+  const month =
+    timeStamp.getUTCMonth() + 1 > 9
+      ? timeStamp.getUTCMonth() + 1
+      : `0${timeStamp.getUTCMonth() + 1}`
+  const day =
+    timeStamp.getUTCDate() > 9
+      ? timeStamp.getUTCDate()
+      : `0${timeStamp.getUTCDate()}`
   if (format === 'short') {
-    return now.getUTCFullYear().toString() + month + day
+    return `${timeStamp.getUTCFullYear()}${month}${day}`
   } else {
     const hours =
-      now.getUTCHours() > 9 ? now.getUTCHours() : '0' + now.getUTCHours()
+      timeStamp.getUTCHours() > 9
+        ? timeStamp.getUTCHours()
+        : `0${timeStamp.getUTCHours()}`
     const minutes =
-      now.getUTCMinutes() > 9 ? now.getUTCMinutes() : '0' + now.getUTCMinutes()
+      timeStamp.getUTCMinutes() > 9
+        ? timeStamp.getUTCMinutes()
+        : `0${timeStamp.getUTCMinutes()}`
     const seconds =
-      now.getUTCSeconds() > 9 ? now.getUTCSeconds() : '0' + now.getUTCSeconds()
-    return (
-      now.getUTCFullYear().toString() +
-      month +
-      day +
-      'T' +
-      hours +
-      minutes +
-      seconds +
-      'Z'
-    )
+      timeStamp.getUTCSeconds() > 9
+        ? timeStamp.getUTCSeconds()
+        : `0${timeStamp.getUTCSeconds()}`
+    return `${timeStamp.getUTCFullYear()}${month}${day}T${hours}${minutes}${seconds}Z`
   }
 }
 
-function getAuthHeader(
-  timeStamp,
-  host,
-  path,
-  query,
-  headers,
-  method,
-  region,
-  service,
-  accessKeyId,
-  secretAccessKey,
-  payload
-) {
-  const authHeader =
-    'AWS4-HMAC-SHA256 ' +
-    'Credential=' +
-    accessKeyId +
-    '/' +
-    getFormattedDate(timeStamp, 'short') +
-    '/' +
-    region +
-    '/' +
-    service +
-    '/aws4_request, ' +
-    'SignedHeaders=' +
-    (headers['Content-Type'] || headers['content-type']
-      ? 'content-type:'
-      : '') +
-    'host;x-amz-date, ' +
-    'Signature=' +
-    getAwsSignature(
-      timeStamp,
-      host,
-      path,
-      query,
-      headers,
-      method,
-      region,
-      service,
-      accessKeyId,
-      secretAccessKey,
-      payload
-    )
+function getAuthHeader(args) {
+  const { timeStamp, headers, region, service, accessKeyId } = args
+
+  const formattedTimeStamp = getFormattedDate(timeStamp, 'short')
+  const signedHeaders = getSignedHeaders(headers)
+  const signature = getAwsSignature(args)
+  const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${formattedTimeStamp}/${region}/${service}/aws4_request, SignedHeaders=${signedHeaders}, Signature=${signature}`
   return authHeader
 }
 
 export const sign = function(opts, config) {
-  const url = new URL(opts.url)
-  const query =
-    url.search.length && url.search[0] === '?'
-      ? url.search.slice(1)
-      : url.search
+  const { url, method, data } = opts
+  const { region, service, accessKeyId, secretAccessKey } = config
+  const urlObject = new URL(url)
+  const { search, hostname, pathname } = urlObject
+  const query = search.length && search[0] === '?' ? search.slice(1) : search
   const now = new Date()
   opts.headers = opts.headers || {}
-  opts.headers.Authorization = getAuthHeader(
-    now,
-    url.hostname,
-    url.pathname,
+  opts.headers.Authorization = getAuthHeader({
+    timeStamp: now,
+    host: hostname,
+    path: pathname,
     query,
-    opts.headers,
-    opts.method,
-    config.region,
-    config.service,
-    config.accessKeyId,
-    config.secretAccessKey,
-    opts.data
-  )
+    headers: opts.headers,
+    method,
+    region,
+    service,
+    accessKeyId,
+    secretAccessKey,
+    payload: data
+  })
   opts.headers['X-Amz-Date'] = getFormattedDate(now, 'long')
 }
