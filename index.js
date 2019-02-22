@@ -1,7 +1,7 @@
 import HmacSHA256 from 'crypto-js/hmac-sha256'
 import Sha256 from 'crypto-js/sha256'
 
-function getRequestHeaders(args) {
+const getRequestHeaders = args => {
   const { headers, host, timeStamp } = args
   return Object.keys(headers)
     .map(header => `${header.toLowerCase()}:${headers[header]}`)
@@ -12,17 +12,12 @@ function getRequestHeaders(args) {
     .join('\n')
 }
 
-function getSignedHeaders(headers) {
-  return (
-    Object.keys(headers)
-      .join(';')
-      .toLowerCase() +
-    (Object.keys(headers).length ? ';' : '') +
-    'host;x-amz-date'
-  )
+const getSignedHeaders = headers => {
+  const headerNames = Object.keys(headers).concat(['host', 'x-amz-date'])
+  return headerNames.join(';').toLowerCase()
 }
 
-function getCanonicalRequest(args) {
+const getCanonicalRequest = args => {
   const { path, query, headers, method, payload } = args
   const canonicalRequest = [
     `${method.toUpperCase()}`,
@@ -40,7 +35,7 @@ function getHashedCanonicalRequest(request) {
   return Sha256(request).toString()
 }
 
-function getStringToSign(args, hashedRequest) {
+const getStringToSign = (args, hashedRequest) => {
   const { timeStamp, region, service } = args
   const stringToSign = [
     `AWS4-HMAC-SHA256`,
@@ -51,8 +46,9 @@ function getStringToSign(args, hashedRequest) {
   return stringToSign
 }
 
-function getSigningKey(now, region, service, secretAccessKey) {
-  const dateStamp = getFormattedDate(now, 'short')
+const getSigningKey = args => {
+  const { timeStamp, region, service, secretAccessKey } = args
+  const dateStamp = getFormattedDate(timeStamp, 'short')
   const kDate = HmacSHA256(dateStamp, 'AWS4' + secretAccessKey)
   const kRegion = HmacSHA256(region, kDate)
   const kService = HmacSHA256(service, kRegion)
@@ -64,47 +60,35 @@ function getSignature(stringToSign, signingKey) {
   return HmacSHA256(stringToSign, signingKey).toString()
 }
 
-function getAwsSignature(args) {
-  const { timeStamp, region, service, secretAccessKey } = args
+const getAwsSignature = args => {
   const canonicalRequest = getCanonicalRequest(args)
   const hashedRequest = getHashedCanonicalRequest(canonicalRequest)
   const stringToSign = getStringToSign(args, hashedRequest)
-  const signingKey = getSigningKey(timeStamp, region, service, secretAccessKey)
+  const signingKey = getSigningKey(args)
   const signature = getSignature(stringToSign, signingKey)
   return signature
 }
 
-function getFormattedDate(timeStamp, format) {
-  const month =
-    timeStamp.getUTCMonth() + 1 > 9
-      ? timeStamp.getUTCMonth() + 1
-      : `0${timeStamp.getUTCMonth() + 1}`
-  const day =
-    timeStamp.getUTCDate() > 9
-      ? timeStamp.getUTCDate()
-      : `0${timeStamp.getUTCDate()}`
+const getFormattedDate = (timeStamp, format) => {
+  const utcMonth = timeStamp.getUTCMonth() + 1
+  const utcDay = timeStamp.getUTCDate()
+  const month = utcMonth > 9 ? utcMonth : `0${utcMonth}`
+  const day = utcDay > 9 ? utcDay : `0${utcDay}`
   if (format === 'short') {
     return `${timeStamp.getUTCFullYear()}${month}${day}`
   } else {
-    const hours =
-      timeStamp.getUTCHours() > 9
-        ? timeStamp.getUTCHours()
-        : `0${timeStamp.getUTCHours()}`
-    const minutes =
-      timeStamp.getUTCMinutes() > 9
-        ? timeStamp.getUTCMinutes()
-        : `0${timeStamp.getUTCMinutes()}`
-    const seconds =
-      timeStamp.getUTCSeconds() > 9
-        ? timeStamp.getUTCSeconds()
-        : `0${timeStamp.getUTCSeconds()}`
+    const utcHours = timeStamp.getUTCHours()
+    const utcMinutes = timeStamp.getUTCMinutes()
+    const utcSeconds = timeStamp.getUTCSeconds()
+    const hours = utcHours > 9 ? utcHours : `0${utcHours}`
+    const minutes = utcMinutes > 9 ? utcMinutes : `0${utcMinutes}`
+    const seconds = utcSeconds > 9 ? utcSeconds : `0${utcSeconds}`
     return `${timeStamp.getUTCFullYear()}${month}${day}T${hours}${minutes}${seconds}Z`
   }
 }
 
-function getAuthHeader(args) {
+const getAuthHeader = args => {
   const { timeStamp, headers, region, service, accessKeyId } = args
-
   const formattedTimeStamp = getFormattedDate(timeStamp, 'short')
   const signedHeaders = getSignedHeaders(headers)
   const signature = getAwsSignature(args)
@@ -112,7 +96,7 @@ function getAuthHeader(args) {
   return authHeader
 }
 
-export const sign = function(opts, config) {
+export const sign = (opts, config) => {
   const { url, method, data } = opts
   const { region, service, accessKeyId, secretAccessKey } = config
   const urlObject = new URL(url)
